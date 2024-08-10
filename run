@@ -1,0 +1,30 @@
+#!/bin/bash
+set -e
+
+# All Kaleidomancy stuff goes in the directory this script is in
+KMDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
+
+# Make sure the runtime dir exists
+RUNTIMEDIR=$KMDIR/runtime
+if ! [ -d $RUNTIMEDIR ]; then
+    echo "[run] runtime not found. Please run setup first"
+    exit 1
+fi
+
+# If the pipe exists, the Kaleidomancy Agent is already running
+if [ -p $RUNTIMEDIR/kaleidomancy-cmds ]; then
+    echo "[run] pipe exists. Kaleidomancy Agent is already running or did not exit cleanly"
+    exit 1
+fi
+
+echo "[run] Starting Kaleidomancy Agent..."
+$RUNTIMEDIR/venv/bin/python3 $KMDIR/src/kaleidomancy-agent.py $RUNTIMEDIR/kaleidomancy-cmds
+EXIT_CODE=$?
+
+if [ -p $RUNTIMEDIR/kaleidomancy-cmds ]; then
+    echo "[run] pipe still exists. Kaleidomancy Agent did not exit cleanly"
+    exit 1
+fi
+
+echo "[run] Kaleidomancy Agent exited cleanly with exit code $EXIT_CODE"
+exit 0

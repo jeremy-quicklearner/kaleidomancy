@@ -1,0 +1,36 @@
+#!/bin/bash
+set -e
+
+# All Kaleidomancy stuff goes in the directory this script is in
+KMDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
+
+# Make sure the runtime dir exists
+RUNTIMEDIR=$KMDIR/runtime
+if ! [ -d $RUNTIMEDIR ]; then
+    echo "[enable] runtime not found. Please run setup first"
+    exit 1
+fi
+
+# If the pipe exists, the Kaleidomancy Agent is already running
+if [ -p $RUNTIMEDIR/kaleidomancy-cmds ]; then
+    echo "[enable] pipe exists. Kaleidomancy Agent is already running or did not exit cleanly"
+    exit 1
+fi
+
+# Fail if running on unsupported host OS
+HOSTDIR=$KMDIR/os/$(uname)
+if ! [ -d $HOSTDIR ]; then
+    echo "[enable] unsupported host OS $(uname). Consider using $KMDIR/run instead"
+    exit 1
+fi
+
+# OS-Specific Enable
+$HOSTDIR/enable.sh
+
+echo "[enable] Waiting for command pipe to appear..."
+until [ -p $RUNTIMEDIR/kaleidomancy-cmds ]; do
+    sleep 1
+done
+
+echo "[enable] Kaleidomancy Agent enabled and started"
+exit 0

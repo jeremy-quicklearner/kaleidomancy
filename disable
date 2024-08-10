@@ -1,0 +1,30 @@
+#!/bin/bash
+set -e
+
+# All Kaleidomancy stuff goes in the directory this script is in
+KMDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
+
+# If the pipe doesn't exist, the Kaleidomancy Agent already isn't running
+RUNTIMEDIR=$KMDIR/runtime
+if ! [ -p $RUNTIMEDIR/kaleidomancy-cmds ]; then
+    echo "[disable] pipe not found. Kaleidomancy Agent is already not running"
+    exit 1
+fi
+
+# Fail if running on unsupported host OS
+HOSTDIR=$KMDIR/os/$(uname)
+if ! [ -d $HOSTDIR ]; then
+    echo "[disable] unsupported host OS $(uname). Cannot disable Kaleidomancy agent"
+    exit 1
+fi
+
+# OS-Specific Disable while holding writer lock to avoid racing with writers
+flock $RUNTIMEDIR/lock $HOSTDIR/disable.sh
+
+echo "[disable] Waiting for command pipe to vanish..."
+until [ ! -p $RUNTIMEDIR/kaleidomancy-cmds ]; do
+    sleep 1
+done
+
+echo "[disable] Kaleidomancy agent stopped and disabled"
+exit 0

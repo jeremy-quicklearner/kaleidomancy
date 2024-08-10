@@ -1,0 +1,42 @@
+#!/bin/bash
+set -e
+
+# All Kaleidomancy stuff goes in the directory this script is in
+KMDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
+
+# Fail if pip or virtualenv don't exist
+if ! command -v pip &> /dev/null ; then
+    echo "[setup] pip command not found. Required for Kaleidomancy agent"
+    exit 1
+fi
+if ! command -v virtualenv &> /dev/null ; then
+    echo "[setup] virtualenv command not found. Required for Kaleidomancy agent"
+    exit 1
+fi
+
+# If the pipe exists, the Kaleidomancy Agent is already running
+RUNTIMEDIR=$KMDIR/runtime
+if [ -p $RUNTIMEDIR/kaleidomancy-cmds ]; then
+    echo "[setup] pipe exists. Kaleidomancy Agent is already running"
+    exit 1
+fi
+
+# Make sure there's a directory for runtime stuff
+RUNTIMEDIR=$KMDIR/runtime
+mkdir -p $RUNTIMEDIR
+
+# Make sure that directory is empty
+rm -rf $RUNTIMEDIR/*
+
+# Create virtualenv
+echo "[setup] Creating virtualenv..."
+cd $RUNTIMEDIR
+virtualenv venv
+
+# Populate dependencies
+echo "[setup] Populating dependencies..."
+cd $KMDIR
+./runtime/venv/bin/python3 -m pip install -r ./src/requirements.txt
+
+echo "Setup complete. You can use the 'run' or 'enable' scripts now"
+exit 0
