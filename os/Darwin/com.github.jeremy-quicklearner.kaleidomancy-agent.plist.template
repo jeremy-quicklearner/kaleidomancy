@@ -8,7 +8,7 @@
     <array>
         <string>%ROOTDIR%/runtime/venv/bin/python3</string>
         <string>%ROOTDIR%/src/kaleidomancy-agent.py</string>
-        <string>%ROOTDIR%/runtime/kaleidomancy-cmds</string>
+        <string>%ROOTDIR%/runtime/cmds</string>
     </array>
     <key>KeepAlive</key>
     <true/>

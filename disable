@@ -4,10 +4,25 @@ set -e
 # All Kaleidomancy stuff goes in the directory this script is in
 KMDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
 
-# If the pipe doesn't exist, the Kaleidomancy Agent already isn't running
+# Make sure the runtime dir exists
 RUNTIMEDIR=$KMDIR/runtime
-if ! [ -p $RUNTIMEDIR/kaleidomancy-cmds ]; then
-    echo "[disable] pipe not found. Kaleidomancy Agent is already not running"
+if ! [ -d $RUNTIMEDIR ]; then
+    echo "[disable] runtime not found. Please run setup first"
+    exit 1
+fi
+
+# Fail if running on unsupported host OS
+HOSTDIR=$KMDIR/os/$(uname)
+if ! [ -d $HOSTDIR ]; then
+    echo "[disable] unsupported host OS $(uname). Cannot disable Kaleidomancy agent"
+    exit 1
+fi
+
+# If the Reader Lock is not held, Kaleidomancy Agent already isn't running
+CMDDIR=$RUNTIMEDIR/cmds
+RLOCK=$CMDDIR/rlock
+if flock -n $RLOCK echo "[disable] Reader Lock is free"; then
+    echo "[disable] Reader Lock is not held. Kaleidomancy Agent is already not running"
     exit 1
 fi
 
@@ -19,12 +34,10 @@ if ! [ -d $HOSTDIR ]; then
 fi
 
 # OS-Specific Disable while holding writer lock to avoid racing with writers
-flock $RUNTIMEDIR/lock $HOSTDIR/disable.sh
+WLOCK=$CMDDIR/wlock
+flock $WLOCK $HOSTDIR/disable.sh
 
-echo "[disable] Waiting for command pipe to vanish..."
-until [ ! -p $RUNTIMEDIR/kaleidomancy-cmds ]; do
-    sleep 1
-done
-
+echo "[disable] Waiting for reader lock to be released..."
+flock $RLOCK echo "[disable] Reader Lock is free"
 echo "[disable] Kaleidomancy agent stopped and disabled"
 exit 0

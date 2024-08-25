@@ -3,6 +3,7 @@ import hid
 import usbmonitor
 import threading
 
+pollInterval = 0.5
 supportedDevices = {
     # (Vendor ID, Product ID):{(Usage Page, Usage ID): (Device Type, Report Length)}
     (0x4B50,0xEF8D): {(0xFF60, 0x61): ("kbd-60-rgbmat", 32)}
@@ -56,7 +57,7 @@ def maintainBus():
 
     try:
         print('Starting USB Monitor...')
-        monitor.start_monitoring(on_connect=onConnect, on_disconnect=onDisconnect)
+        monitor.start_monitoring(on_connect=onConnect, on_disconnect=onDisconnect, check_every_seconds=pollInterval)
 
         print('USB Monitor is running. Checking if any devices are already present...')
         with mutex:
@@ -77,13 +78,19 @@ def maintainBus():
                 #print(report)
 
                 try:
+                    intf = None
                     intf = hid.Device(path=intfPath)
                     intf.write(bytes(report))
 
                 #respReport = intf.read(reportLength, timeout=1)
                 #print("Response:", respReport)
+
+                except hid.HIDException:
+                    print('Failed to write to device at %s. It may have been disconnected less than 0.5 seconds ago' % intfPath)
+
                 finally:
-                    intf.close()
+                    if intf:
+                        intf.close()
 
         yield sendMsg
 

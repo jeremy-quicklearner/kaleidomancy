@@ -14,19 +14,25 @@ if ! command -v virtualenv &> /dev/null ; then
     exit 1
 fi
 
-# If the pipe exists, the Kaleidomancy Agent is already running
-RUNTIMEDIR=$KMDIR/runtime
-if [ -p $RUNTIMEDIR/kaleidomancy-cmds ]; then
-    echo "[setup] pipe exists. Kaleidomancy Agent is already running"
-    exit 1
-fi
-
 # Make sure there's a directory for runtime stuff
 RUNTIMEDIR=$KMDIR/runtime
 mkdir -p $RUNTIMEDIR
 
-# Make sure that directory is empty
-rm -rf $RUNTIMEDIR/*
+# Make sure it has a subdirectory for the command pipe and its locks
+CMDDIR=$RUNTIMEDIR/cmds
+mkdir -p $CMDDIR
+touch $CMDDIR/rlock
+touch $CMDDIR/wlock
+if [ ! -p $CMDDIR/pipe ]; then
+    mkfifo $CMDDIR/pipe
+fi
+
+# If the Reader Lock is held, the Kaleidomancy Agent or a Forwarder is already running
+RLOCK=$CMDDIR/rlock
+if ! flock -n $RLOCK echo "[setup] Reader Lock is free"; then
+    echo "[setup] Reader Lock is held. Kaleidomancy Agent or a Forwarder is already running"
+    exit 1
+fi
 
 # Create virtualenv
 echo "[setup] Creating virtualenv..."
