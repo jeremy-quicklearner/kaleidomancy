@@ -22,7 +22,6 @@ if flock -n $RLOCK echo "[forward] Reader Lock is free"; then
     echo "[forward] Reader Lock is not held. No Kaleidomancy Agent or Forwarder present to consume commands"
     exit 1
 fi
-echo 'lock ok'
 
 REMOTEKMDIR='~/kaleidomancy'
 if [ $# -gt 1 ]; then
@@ -36,11 +35,13 @@ REMOTEPIPE=$REMOTECMDDIR/pipe
 echo "[forward] using $REMOTEKMDIR as Kaleidomancy dir on remote host"
 
 ssh $1 '
-if ! [ -p '$REMOTEPIPE' ]; then
-    >&2 echo "[forward] Remote command pipe not found. Please run setup on remote host first"
-    exit 1
+mkdir -p '$REMOTECMDDIR'
+touch '$REMOTECMDDIR'/rlock
+touch '$REMOTECMDDIR'/wlock
+if [ ! -p '$REMOTECMDDIR'/pipe ]; then
+    mkfifo '$REMOTECMDDIR'/pipe
 fi
-if ! flock -n '$REMOTERLOCK' echo "[run] Reader Lock is free"; then
+if ! flock -n '$REMOTERLOCK' echo "[run] Reader Lock is free" > /dev/null; then
     >&2 echo "[forward] Reader Lock is held. Kaleidomancy Agent or a Forwarder is already running"
     exit 1
 fi

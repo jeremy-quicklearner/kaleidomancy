@@ -18,7 +18,6 @@ if flock -n $RLOCK echo "[cmd] Reader Lock is free"; then
     echo "[cmd] Reader Lock is not held. No Kaleidomancy Agent or Forwarder present to consume commands"
     exit 1
 fi
-echo 'lock ok'
 
 # This mess with eval and pipes is to buffer everything before obtaining the Writer Lock
 WLOCK=$CMDDIR/wlock
